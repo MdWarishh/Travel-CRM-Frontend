@@ -1,0 +1,13 @@
+Install frontend dependencies
+bash
+
+cd /home/claude/client && npm install axios socket.io-client zustand @tanstack/react-query react-hook-form @hookform/resolvers zod lucide-react date-fns clsx tailwind-merge 2>&1 | tail -5
+Output
+
+
+152 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+Install additional frontend deps
