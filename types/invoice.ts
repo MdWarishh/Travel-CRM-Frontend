@@ -14,6 +14,7 @@ export interface CompanySettings {
   id: string;
   companyName: string;
   logoUrl?: string | null;
+  signatureUrl?: string | null;   // ← NEW: authorised signatory image
   tagline?: string | null;
   address?: string | null;
   city?: string | null;
@@ -128,12 +129,10 @@ export interface GstInvoice {
   invoiceNumber: string;
   status: InvoiceStatus;
 
-  // Links
   customerId?: string | null;
   bookingId?: string | null;
-  vendorId?: string | null;    // NEW
+  vendorId?: string | null;
 
-  // Billing info
   billingName: string;
   billingAddress?: string | null;
   billingState?: string | null;
@@ -141,17 +140,14 @@ export interface GstInvoice {
   billingEmail?: string | null;
   customerGstin?: string | null;
 
-  // Dates
   issueDate: string;
   dueDate?: string | null;
 
-  // Amounts
   subtotal: number;
   discountType?: DiscountType | null;
   discountValue?: number | null;
   discountAmount?: number | null;
 
-  // GST
   gstRate: number;
   gstType: GstType;
   cgstRate?: number | null;
@@ -170,12 +166,11 @@ export interface GstInvoice {
   terms?: string | null;
   companySnapshot?: CompanySettings | null;
 
-  // Relations
   items: GstInvoiceItem[];
   payments: InvoicePayment[];
   customer?: CustomerStub | null;
   booking?: BookingStub | null;
-  vendor?: VendorStub | null;    // NEW
+  vendor?: VendorStub | null;
   createdBy?: { id: string; name: string } | null;
 
   isDeleted: boolean;
@@ -190,7 +185,7 @@ export interface GstInvoice {
 export interface CreateInvoicePayload {
   customerId?: string | null;
   bookingId?: string | null;
-  vendorId?: string | null;    // NEW
+  vendorId?: string | null;
   billingName: string;
   billingAddress?: string;
   billingState?: string;
@@ -221,7 +216,7 @@ export interface InvoiceQuery {
   status?: InvoiceStatus;
   customerId?: string;
   bookingId?: string;
-  vendorId?: string;    // NEW
+  vendorId?: string;
   fromDate?: string;
   toDate?: string;
   sort?: 'newest' | 'oldest' | 'amount_high' | 'amount_low';
@@ -262,7 +257,7 @@ export interface InvoiceDashboard {
 }
 
 // ─────────────────────────────────────────────
-// CUSTOMER SELECT (for invoice form)
+// CUSTOMER SELECT
 // ─────────────────────────────────────────────
 
 export interface CustomerOption {
@@ -275,10 +270,6 @@ export interface CustomerOption {
   country?: string | null;
 }
 
-// ─────────────────────────────────────────────
-// VENDOR SELECT (for invoice form)  NEW
-// ─────────────────────────────────────────────
-
 export interface VendorOption {
   id: string;
   name: string;
@@ -286,10 +277,6 @@ export interface VendorOption {
   serviceType?: string | null;
   city?: string | null;
 }
-
-// ─────────────────────────────────────────────
-// BOOKING SELECT (for invoice form)  NEW
-// ─────────────────────────────────────────────
 
 export interface BookingOption {
   id: string;

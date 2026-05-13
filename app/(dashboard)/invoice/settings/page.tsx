@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -24,20 +23,14 @@ import { toast } from 'sonner';
 import {
   ArrowLeft, Save, Loader2, Building2, BadgeIndianRupee,
   FileDigit, CreditCard, FileText, AlertTriangle, RefreshCw,
-  Upload, X, Phone, Mail, Globe, MapPin,
+  Upload, X, PenLine,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function SectionCard({
-  icon: Icon,
-  title,
-  subtitle,
-  children,
+  icon: Icon, title, subtitle, children,
 }: {
-  icon: any;
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
+  icon: any; title: string; subtitle?: string; children: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border bg-card shadow-sm">
@@ -55,6 +48,71 @@ function SectionCard({
   );
 }
 
+// Reusable image upload box
+function ImageUploadBox({
+  label, hint, preview, onFile, onClear, accept = 'image/*',
+}: {
+  label: string;
+  hint: string;
+  preview: string | null;
+  onFile: (file: File) => void;
+  onClear: () => void;
+  accept?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="flex items-start gap-4">
+      <div
+        className={cn(
+          'relative flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed cursor-pointer overflow-hidden transition-colors',
+          preview ? 'border-violet-300 bg-violet-50' : 'border-muted-foreground/30 hover:border-violet-400 bg-muted/30'
+        )}
+        onClick={() => ref.current?.click()}
+      >
+        {preview ? (
+          <>
+            <img src={preview} alt={label} className="h-full w-full object-contain p-1" />
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              className="absolute top-0.5 right-0.5 rounded-full bg-black/40 p-0.5 text-white hover:bg-black/60"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </>
+        ) : (
+          <Upload className="h-6 w-6 text-muted-foreground" />
+        )}
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          if (file.size > 2 * 1024 * 1024) { toast.error(`${label} must be under 2MB`); return; }
+          onFile(file);
+          e.target.value = '';
+        }}
+      />
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>
+        <Button
+          type="button" variant="outline" size="sm"
+          className="mt-2 h-7 gap-1.5 text-xs"
+          onClick={() => ref.current?.click()}
+        >
+          <Upload className="h-3 w-3" />
+          {preview ? `Change ${label}` : `Upload ${label}`}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 const GST_RATES = [0, 5, 12, 18, 28];
 
 export default function InvoiceSettingsPage() {
@@ -65,7 +123,7 @@ export default function InvoiceSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [resetNumber, setResetNumber] = useState('0');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const logoRef = useRef<HTMLInputElement>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
 
   useEffect(() => {
     invoiceService.getCompanySettings()
@@ -73,6 +131,7 @@ export default function InvoiceSettingsPage() {
         setSettings(data);
         setForm(data);
         if (data.logoUrl) setLogoPreview(data.logoUrl);
+        if (data.signatureUrl) setSignaturePreview(data.signatureUrl);
       })
       .catch(() => toast.error('Failed to load settings'))
       .finally(() => setLoading(false));
@@ -81,21 +140,18 @@ export default function InvoiceSettingsPage() {
   const set = (key: keyof CompanySettings, value: any) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo must be under 2MB');
-      return;
-    }
+  // Generic image handler — converts to base64 for preview + stores as URL
+  const handleImageFile = (
+    file: File,
+    setPreview: (v: string | null) => void,
+    formKey: keyof CompanySettings
+  ) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      setLogoPreview(dataUrl);
-      // In real app: upload to Cloudinary/S3 and get URL, then set logoUrl
-      // For now set preview as placeholder
-      set('logoUrl', dataUrl);
-      toast.info('Logo selected — upload to your storage service for persistence');
+      setPreview(dataUrl);
+      set(formKey, dataUrl);
+      toast.info('Image selected — save settings to persist');
     };
     reader.readAsDataURL(file);
   };
@@ -117,10 +173,7 @@ export default function InvoiceSettingsPage() {
 
   const handleResetNumbering = async () => {
     const num = parseInt(resetNumber, 10);
-    if (isNaN(num) || num < 0) {
-      toast.error('Enter a valid number (0 or above)');
-      return;
-    }
+    if (isNaN(num) || num < 0) { toast.error('Enter a valid number (0 or above)'); return; }
     try {
       await invoiceService.resetInvoiceNumbering(num);
       toast.success(`Invoice numbering reset. Next invoice will be #${num + 1}`);
@@ -132,27 +185,23 @@ export default function InvoiceSettingsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col gap-4 p-6">
-        <Skeleton className="h-14 w-full" />
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full rounded-xl" />
-        ))}
-      </div>
-    );
-  }
-
   const previewInvoiceNumber = () => {
     const prefix = form.invoicePrefix ?? 'INV';
     const format = form.invoiceNumberFormat ?? 'SIMPLE';
     const next = (settings?.lastInvoiceNumber ?? 0) + 1;
     const padded = String(next).padStart(3, '0');
-    if (format === 'YEARLY') {
-      return `${prefix}-${new Date().getFullYear()}-${padded}`;
-    }
+    if (format === 'YEARLY') return `${prefix}-${new Date().getFullYear()}-${padded}`;
     return `${prefix}-${padded}`;
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4 p-6">
+        <Skeleton className="h-14 w-full" />
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-0 min-h-screen bg-muted/30">
@@ -168,11 +217,7 @@ export default function InvoiceSettingsPage() {
             <p className="text-xs text-muted-foreground">Company profile, GST, numbering & defaults</p>
           </div>
         </div>
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="gap-1.5 bg-violet-600 hover:bg-violet-700"
-        >
+        <Button onClick={handleSave} disabled={saving} className="gap-1.5 bg-violet-600 hover:bg-violet-700">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Save Settings
         </Button>
@@ -184,65 +229,37 @@ export default function InvoiceSettingsPage() {
         {/* ─── 1. Company Profile ─── */}
         <SectionCard icon={Building2} title="Company Profile" subtitle="Shown on every invoice">
           <div className="space-y-5">
-            {/* Logo */}
-            <div className="flex items-start gap-4">
-              <div
-                className={cn(
-                  'flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border-2 border-dashed cursor-pointer overflow-hidden transition-colors',
-                  logoPreview ? 'border-violet-300 bg-violet-50' : 'border-muted-foreground/30 hover:border-violet-400 bg-muted/30'
-                )}
-                onClick={() => logoRef.current?.click()}
-              >
-                {logoPreview ? (
-                  <img src={logoPreview} alt="Logo" className="h-full w-full object-contain" />
-                ) : (
-                  <Upload className="h-7 w-7 text-muted-foreground" />
-                )}
-              </div>
-              <input
-                ref={logoRef}
-                type="file"
-                accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                className="hidden"
-                onChange={handleLogoChange}
-              />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Company Logo</p>
-                <p className="text-xs text-muted-foreground mt-1">PNG, JPG or SVG · Max 2MB</p>
-                <div className="mt-2 flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => logoRef.current?.click()}
-                  >
-                    <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload
-                  </Button>
-                  {logoPreview && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-destructive hover:text-destructive"
-                      onClick={() => { setLogoPreview(null); set('logoUrl', null); }}
-                    >
-                      <X className="mr-1 h-3.5 w-3.5" /> Remove
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
+
+            {/* Logo Upload */}
+            <ImageUploadBox
+              label="Company Logo"
+              hint="PNG or JPG, max 2MB. Shown top-left on invoice."
+              preview={logoPreview}
+              onFile={(f) => handleImageFile(f, setLogoPreview, 'logoUrl')}
+              onClear={() => { setLogoPreview(null); set('logoUrl', null); }}
+            />
 
             <Separator />
 
+            {/* Signature Upload */}
+            <ImageUploadBox
+              label="Authorised Signature"
+              hint="PNG with transparent background recommended. Shown on invoice footer."
+              preview={signaturePreview}
+              onFile={(f) => handleImageFile(f, setSignaturePreview, 'signatureUrl')}
+              onClear={() => { setSignaturePreview(null); set('signatureUrl', null); }}
+            />
+
+            <Separator />
+
+            {/* Company Details */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Company Name *</Label>
                 <Input
                   value={form.companyName ?? ''}
                   onChange={(e) => set('companyName', e.target.value)}
-                  placeholder="Your Travel Agency Pvt. Ltd."
+                  placeholder="Rauf Travels Pvt. Ltd."
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
@@ -258,110 +275,77 @@ export default function InvoiceSettingsPage() {
                 <Input
                   value={form.address ?? ''}
                   onChange={(e) => set('address', e.target.value)}
-                  placeholder="Street, Area"
+                  placeholder="123 Main Street"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>City</Label>
-                <Input
-                  value={form.city ?? ''}
-                  onChange={(e) => set('city', e.target.value)}
-                  placeholder="Mumbai"
-                />
+                <Input value={form.city ?? ''} onChange={(e) => set('city', e.target.value)} placeholder="Mumbai" />
               </div>
               <div className="space-y-1.5">
                 <Label>State</Label>
-                <Input
-                  value={form.state ?? ''}
-                  onChange={(e) => set('state', e.target.value)}
-                  placeholder="Maharashtra"
-                />
+                <Input value={form.state ?? ''} onChange={(e) => set('state', e.target.value)} placeholder="Maharashtra" />
               </div>
               <div className="space-y-1.5">
                 <Label>Pincode</Label>
+                <Input value={form.pincode ?? ''} onChange={(e) => set('pincode', e.target.value)} placeholder="400001" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Phone</Label>
+                <Input value={form.phone ?? ''} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input value={form.email ?? ''} onChange={(e) => set('email', e.target.value)} placeholder="hello@company.com" type="email" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Website</Label>
+                <Input value={form.website ?? ''} onChange={(e) => set('website', e.target.value)} placeholder="https://company.com" />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* GST / PAN */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>GSTIN</Label>
                 <Input
-                  value={form.pincode ?? ''}
-                  onChange={(e) => set('pincode', e.target.value)}
-                  placeholder="400001"
-                  maxLength={6}
+                  value={form.gstin ?? ''} onChange={(e) => set('gstin', e.target.value.toUpperCase())}
+                  placeholder="22AAAAA0000A1Z5" className="font-mono uppercase"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>PAN</Label>
+                <Input
+                  value={form.pan ?? ''} onChange={(e) => set('pan', e.target.value.toUpperCase())}
+                  placeholder="AAAAA0000A" className="font-mono uppercase"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label>State Code</Label>
                 <Input
-                  value={form.stateCode ?? ''}
-                  onChange={(e) => set('stateCode', e.target.value)}
-                  placeholder="27"
-                  maxLength={2}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</Label>
-                <Input
-                  value={form.phone ?? ''}
-                  onChange={(e) => set('phone', e.target.value)}
-                  placeholder="+91 98765 43210"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1"><Mail className="h-3 w-3" /> Email</Label>
-                <Input
-                  type="email"
-                  value={form.email ?? ''}
-                  onChange={(e) => set('email', e.target.value)}
-                  placeholder="info@myagency.com"
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label className="flex items-center gap-1"><Globe className="h-3 w-3" /> Website</Label>
-                <Input
-                  value={form.website ?? ''}
-                  onChange={(e) => set('website', e.target.value)}
-                  placeholder="https://myagency.com"
+                  value={form.stateCode ?? ''} onChange={(e) => set('stateCode', e.target.value)}
+                  placeholder="27" className="font-mono"
                 />
               </div>
             </div>
           </div>
         </SectionCard>
 
-        {/* ─── 2. GST / Tax Info ─── */}
-        <SectionCard icon={BadgeIndianRupee} title="GST & Tax Information" subtitle="Used for compliance on all invoices">
+        {/* ─── 2. GST Defaults ─── */}
+        <SectionCard icon={BadgeIndianRupee} title="GST Defaults" subtitle="Pre-filled on every new invoice">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>GSTIN</Label>
-              <Input
-                value={form.gstin ?? ''}
-                onChange={(e) => set('gstin', e.target.value.toUpperCase())}
-                placeholder="22AAAAA0000A1Z5"
-                className="font-mono uppercase"
-                maxLength={15}
-              />
-              <p className="text-xs text-muted-foreground">Format: 22AAAAA0000A1Z5</p>
-            </div>
             <div className="space-y-1.5">
-              <Label>PAN Number</Label>
-              <Input
-                value={form.pan ?? ''}
-                onChange={(e) => set('pan', e.target.value.toUpperCase())}
-                placeholder="AAAAA0000A"
-                className="font-mono uppercase"
-                maxLength={10}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Default GST Rate (%)</Label>
+              <Label>Default GST Rate</Label>
               <Select
                 value={String(form.defaultGstRate ?? 18)}
                 onValueChange={(v) => set('defaultGstRate', Number(v))}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {GST_RATES.map((r) => (
-                    <SelectItem key={r} value={String(r)}>
-                      {r === 0 ? 'No GST (0%)' : `${r}%`}
-                    </SelectItem>
+                    <SelectItem key={r} value={String(r)}>{r}%</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -372,9 +356,7 @@ export default function InvoiceSettingsPage() {
                 value={form.defaultGstType ?? 'CGST_SGST'}
                 onValueChange={(v) => set('defaultGstType', v as GstType)}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="CGST_SGST">CGST + SGST (Same State)</SelectItem>
                   <SelectItem value="IGST">IGST (Inter-State)</SelectItem>
@@ -394,9 +376,7 @@ export default function InvoiceSettingsPage() {
                 <Input
                   value={form.invoicePrefix ?? 'INV'}
                   onChange={(e) => set('invoicePrefix', e.target.value.toUpperCase())}
-                  placeholder="INV"
-                  maxLength={10}
-                  className="font-mono uppercase"
+                  placeholder="INV" maxLength={10} className="font-mono uppercase"
                 />
               </div>
               <div className="space-y-1.5">
@@ -405,9 +385,7 @@ export default function InvoiceSettingsPage() {
                   value={form.invoiceNumberFormat ?? 'SIMPLE'}
                   onValueChange={(v) => set('invoiceNumberFormat', v as InvoiceNumberFormat)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SIMPLE">Simple — INV-001</SelectItem>
                     <SelectItem value="YEARLY">Yearly — INV-2026-001</SelectItem>
@@ -416,17 +394,13 @@ export default function InvoiceSettingsPage() {
               </div>
             </div>
 
-            {/* Preview */}
             <div className="rounded-lg bg-violet-50 border border-violet-100 px-4 py-3 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Next invoice will be:</span>
-              <span className="font-mono font-bold text-violet-700 text-base">
-                {previewInvoiceNumber()}
-              </span>
+              <span className="font-mono font-bold text-violet-700 text-base">{previewInvoiceNumber()}</span>
             </div>
 
             <Separator />
 
-            {/* Reset numbering */}
             <div className="space-y-3">
               <div>
                 <p className="text-sm font-medium text-destructive flex items-center gap-1.5">
@@ -438,12 +412,9 @@ export default function InvoiceSettingsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Input
-                  type="number"
-                  value={resetNumber}
+                  type="number" value={resetNumber}
                   onChange={(e) => setResetNumber(e.target.value)}
-                  min={0}
-                  className="w-32 font-mono"
-                  placeholder="0"
+                  min={0} className="w-32 font-mono" placeholder="0"
                 />
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -455,16 +426,13 @@ export default function InvoiceSettingsPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Reset Invoice Numbering?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will reset the counter to {resetNumber}. The next invoice will be numbered{' '}
-                        <strong>{previewInvoiceNumber()}</strong> (approximately). This action cannot be undone.
+                        This will reset the counter to {resetNumber}. Next invoice will be{' '}
+                        <strong>{previewInvoiceNumber()}</strong>. This cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleResetNumbering}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
+                      <AlertDialogAction onClick={handleResetNumbering} className="bg-destructive hover:bg-destructive/90">
                         Yes, Reset
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -480,86 +448,50 @@ export default function InvoiceSettingsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Bank Name</Label>
-              <Input
-                value={form.bankName ?? ''}
-                onChange={(e) => set('bankName', e.target.value)}
-                placeholder="HDFC Bank"
-              />
+              <Input value={form.bankName ?? ''} onChange={(e) => set('bankName', e.target.value)} placeholder="HDFC Bank" />
             </div>
             <div className="space-y-1.5">
               <Label>Account Name</Label>
-              <Input
-                value={form.accountName ?? ''}
-                onChange={(e) => set('accountName', e.target.value)}
-                placeholder="My Agency Pvt. Ltd."
-              />
+              <Input value={form.accountName ?? ''} onChange={(e) => set('accountName', e.target.value)} placeholder="My Agency Pvt. Ltd." />
             </div>
             <div className="space-y-1.5">
               <Label>Account Number</Label>
-              <Input
-                value={form.accountNumber ?? ''}
-                onChange={(e) => set('accountNumber', e.target.value)}
-                placeholder="1234567890"
-                className="font-mono"
-              />
+              <Input value={form.accountNumber ?? ''} onChange={(e) => set('accountNumber', e.target.value)} placeholder="1234567890" className="font-mono" />
             </div>
             <div className="space-y-1.5">
               <Label>IFSC Code</Label>
-              <Input
-                value={form.ifscCode ?? ''}
-                onChange={(e) => set('ifscCode', e.target.value.toUpperCase())}
-                placeholder="HDFC0001234"
-                className="font-mono uppercase"
-              />
+              <Input value={form.ifscCode ?? ''} onChange={(e) => set('ifscCode', e.target.value.toUpperCase())} placeholder="HDFC0001234" className="font-mono uppercase" />
             </div>
             <div className="space-y-1.5">
               <Label>UPI ID</Label>
-              <Input
-                value={form.upiId ?? ''}
-                onChange={(e) => set('upiId', e.target.value)}
-                placeholder="agency@upi"
-              />
+              <Input value={form.upiId ?? ''} onChange={(e) => set('upiId', e.target.value)} placeholder="agency@upi" />
             </div>
           </div>
         </SectionCard>
 
         {/* ─── 5. Default Notes & Terms ─── */}
-        <SectionCard
-          icon={FileText}
-          title="Default Notes & Terms"
-          subtitle="Pre-filled on every new invoice (can be overridden per invoice)"
-        >
+        <SectionCard icon={FileText} title="Default Notes & Terms" subtitle="Pre-filled on every new invoice">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Default Notes</Label>
               <Textarea
-                value={form.defaultNotes ?? ''}
-                onChange={(e) => set('defaultNotes', e.target.value)}
-                placeholder="Thank you for your business!"
-                rows={4}
-                className="resize-none"
+                value={form.defaultNotes ?? ''} onChange={(e) => set('defaultNotes', e.target.value)}
+                placeholder="Thank you for your business!" rows={4} className="resize-none"
               />
             </div>
             <div className="space-y-1.5">
               <Label>Default Terms & Conditions</Label>
               <Textarea
-                value={form.defaultTerms ?? ''}
-                onChange={(e) => set('defaultTerms', e.target.value)}
-                placeholder="Payment due within 30 days. All disputes subject to local jurisdiction."
-                rows={4}
-                className="resize-none"
+                value={form.defaultTerms ?? ''} onChange={(e) => set('defaultTerms', e.target.value)}
+                placeholder="Payment due within 30 days." rows={4} className="resize-none"
               />
             </div>
           </div>
         </SectionCard>
 
-        {/* ── Save button at bottom too ── */}
+        {/* ── Save bottom ── */}
         <div className="flex justify-end pb-6">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="gap-1.5 bg-violet-600 hover:bg-violet-700 min-w-36"
-          >
+          <Button onClick={handleSave} disabled={saving} className="gap-1.5 bg-violet-600 hover:bg-violet-700 min-w-36">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save All Settings
           </Button>

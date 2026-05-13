@@ -1,270 +1,356 @@
 // app/invoice/_components/InvoicePdfTemplate.tsx
-// This component is used BOTH for preview and PDF print (A4)
+// A4 single-page premium travel CRM invoice
 
 import { GstInvoice, CompanySettings } from '@/types/invoice';
-import { formatCurrency, formatDate, numberToWords, GST_TYPE_LABELS } from '@/lib/invoiceUtils';
+import { formatCurrency, formatDate, numberToWords } from '@/lib/invoiceUtils';
 
 interface Props {
   invoice: GstInvoice;
   company: CompanySettings;
 }
 
+const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
+  PAID:      { bg: '#dcfce7', color: '#15803d', label: 'PAID' },
+  PARTIAL:   { bg: '#fef9c3', color: '#a16207', label: 'PARTIAL' },
+  UNPAID:    { bg: '#fee2e2', color: '#b91c1c', label: 'UNPAID' },
+  SENT:      { bg: '#dbeafe', color: '#1d4ed8', label: 'SENT' },
+  DRAFT:     { bg: '#f1f5f9', color: '#475569', label: 'DRAFT' },
+  CANCELLED: { bg: '#fee2e2', color: '#991b1b', label: 'CANCELLED' },
+};
+
 export function InvoicePdfTemplate({ invoice, company }: Props) {
   const comp = (invoice.companySnapshot as CompanySettings) ?? company;
+  const statusStyle = STATUS_STYLES[invoice.status] ?? STATUS_STYLES.DRAFT;
+
+  // Compact font sizes to fit single A4 page
+  const fs = {
+    xs:  '7pt',
+    sm:  '7.5pt',
+    base:'8.5pt',
+    md:  '9.5pt',
+    lg:  '11pt',
+    xl:  '18pt',
+  };
 
   return (
     <div
       id="invoice-pdf-root"
-      className="bg-white text-gray-900 font-sans"
       style={{
         width: '210mm',
-        minHeight: '297mm',
-        padding: '12mm 14mm',
-        fontFamily: "'Noto Sans', sans-serif",
-        fontSize: '10pt',
-        lineHeight: 1.5,
+        height: '297mm',
+        padding: '10mm 12mm 8mm',
+        fontFamily: "'Noto Sans', 'Segoe UI', sans-serif",
+        fontSize: fs.base,
+        lineHeight: 1.45,
         boxSizing: 'border-box',
+        background: '#ffffff',
+        color: '#1e293b',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {/* ── HEADER ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8mm' }}>
-        {/* Left: Logo + Company */}
+      {/* ══ TOP ACCENT BAR ══════════════════════════════════════ */}
+      <div style={{
+        height: '4px',
+        background: 'linear-gradient(90deg, #6d28d9, #8b5cf6, #c4b5fd)',
+        borderRadius: '2px',
+        marginBottom: '6mm',
+        flexShrink: 0,
+      }} />
+
+      {/* ══ HEADER: Logo+Company | Invoice Meta ════════════════ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5mm', flexShrink: 0 }}>
+
+        {/* Left — Logo + Company Info */}
         <div style={{ flex: 1 }}>
-          {comp.logoUrl ? (
-            <img src={comp.logoUrl} alt="Logo" style={{ height: '48px', marginBottom: '6px', objectFit: 'contain' }} />
-          ) : (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: '48px', height: '48px', borderRadius: '8px',
-              background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '20pt',
-              marginBottom: '6px',
-            }}>
-              {comp.companyName?.charAt(0) ?? 'C'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            {comp.logoUrl ? (
+              <img src={comp.logoUrl} alt="logo" style={{ height: '40px', maxWidth: '80px', objectFit: 'contain' }} />
+            ) : (
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '8px',
+                background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontWeight: 800, fontSize: fs.lg,
+              }}>
+                {comp.companyName?.charAt(0) ?? 'C'}
+              </div>
+            )}
+            <div>
+              <p style={{ fontWeight: 800, fontSize: fs.lg, margin: 0, color: '#1e293b', letterSpacing: '-0.3px' }}>
+                {comp.companyName}
+              </p>
+              {comp.tagline && (
+                <p style={{ fontSize: fs.xs, color: '#64748b', margin: '1px 0 0', fontStyle: 'italic' }}>
+                  {comp.tagline}
+                </p>
+              )}
             </div>
-          )}
-          <p style={{ fontWeight: 700, fontSize: '13pt', margin: '2px 0 1px' }}>{comp.companyName}</p>
-          {comp.tagline && <p style={{ color: '#6b7280', fontSize: '8pt' }}>{comp.tagline}</p>}
-          <p style={{ color: '#374151', fontSize: '8.5pt', marginTop: '4px' }}>
-            {[comp.address, comp.city, comp.state, comp.pincode].filter(Boolean).join(', ')}
-          </p>
-          {comp.phone && <p style={{ color: '#374151', fontSize: '8.5pt' }}>📞 {comp.phone}</p>}
-          {comp.email && <p style={{ color: '#374151', fontSize: '8.5pt' }}>✉ {comp.email}</p>}
-          {comp.gstin && (
-            <p style={{ color: '#374151', fontSize: '8.5pt', marginTop: '2px' }}>
-              <strong>GSTIN:</strong> {comp.gstin}
-            </p>
-          )}
-          {comp.pan && (
-            <p style={{ color: '#374151', fontSize: '8.5pt' }}>
-              <strong>PAN:</strong> {comp.pan}
-            </p>
-          )}
+          </div>
+
+          <div style={{ fontSize: fs.sm, color: '#475569', lineHeight: 1.6 }}>
+            {[comp.address, comp.city, comp.state, comp.pincode].filter(Boolean).join(', ') && (
+              <p style={{ margin: 0 }}>📍 {[comp.address, comp.city, comp.state, comp.pincode].filter(Boolean).join(', ')}</p>
+            )}
+            {comp.phone && <p style={{ margin: 0 }}>📞 {comp.phone}</p>}
+            {comp.email && <p style={{ margin: 0 }}>✉ {comp.email}</p>}
+            <div style={{ display: 'flex', gap: '16px', marginTop: '1px' }}>
+              {comp.gstin && <span><strong style={{ color: '#374151' }}>GSTIN:</strong> {comp.gstin}</span>}
+              {comp.pan   && <span><strong style={{ color: '#374151' }}>PAN:</strong> {comp.pan}</span>}
+            </div>
+          </div>
         </div>
 
-        {/* Right: Invoice Meta */}
-        <div style={{ textAlign: 'right', minWidth: '120px' }}>
+        {/* Right — Invoice Title + Meta */}
+        <div style={{ textAlign: 'right', minWidth: '140px' }}>
           <p style={{
-            fontSize: '20pt', fontWeight: 800, color: '#7c3aed',
-            letterSpacing: '-0.5px', margin: 0,
-          }}>INVOICE</p>
-          <p style={{ fontFamily: 'monospace', fontSize: '11pt', fontWeight: 700, color: '#1f2937', margin: '4px 0 2px' }}>
+            fontSize: fs.xl, fontWeight: 900, color: '#6d28d9',
+            letterSpacing: '-1px', margin: '0 0 4px', lineHeight: 1,
+          }}>
+            INVOICE
+          </p>
+          <p style={{ fontFamily: 'monospace', fontSize: fs.md, fontWeight: 700, margin: '0 0 4px', color: '#1e293b' }}>
             #{invoice.invoiceNumber}
           </p>
-          <p style={{ fontSize: '8.5pt', color: '#6b7280' }}>
-            <strong>Issue:</strong> {formatDate(invoice.issueDate)}
-          </p>
-          {invoice.dueDate && (
-            <p style={{ fontSize: '8.5pt', color: '#dc2626' }}>
-              <strong>Due:</strong> {formatDate(invoice.dueDate)}
+
+          <div style={{ fontSize: fs.sm, color: '#64748b', lineHeight: 1.8 }}>
+            <p style={{ margin: 0 }}>
+              <strong style={{ color: '#374151' }}>Issue:</strong> {formatDate(invoice.issueDate)}
             </p>
-          )}
+            {invoice.dueDate && (
+              <p style={{ margin: 0, color: invoice.dueAmount > 0 ? '#dc2626' : '#64748b' }}>
+                <strong>Due:</strong> {formatDate(invoice.dueDate)}
+              </p>
+            )}
+          </div>
+
           {/* Status pill */}
           <div style={{
-            display: 'inline-block', marginTop: '6px',
+            display: 'inline-block', marginTop: '5px',
             padding: '2px 10px', borderRadius: '99px',
-            fontSize: '8pt', fontWeight: 700, letterSpacing: '0.5px',
-            background: invoice.status === 'PAID' ? '#d1fae5' : invoice.status === 'PARTIAL' ? '#fef3c7' : '#fee2e2',
-            color: invoice.status === 'PAID' ? '#065f46' : invoice.status === 'PARTIAL' ? '#92400e' : '#991b1b',
+            fontSize: fs.xs, fontWeight: 700, letterSpacing: '0.8px',
+            background: statusStyle.bg, color: statusStyle.color,
+            border: `1px solid ${statusStyle.color}30`,
           }}>
-            {invoice.status}
+            {statusStyle.label}
           </div>
         </div>
       </div>
 
-      {/* ── DIVIDER ── */}
-      <div style={{ height: '2px', background: 'linear-gradient(90deg, #7c3aed, #a78bfa, #e0e7ff)', borderRadius: '1px', marginBottom: '6mm' }} />
+      {/* ══ DIVIDER ═════════════════════════════════════════════ */}
+      <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '4mm', flexShrink: 0 }} />
 
-      {/* ── BILL TO ── */}
-      <div style={{ display: 'flex', gap: '20mm', marginBottom: '6mm' }}>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '7.5pt', fontWeight: 700, color: '#7c3aed', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '3px' }}>
-            Bill To
-          </p>
-          <p style={{ fontWeight: 700, fontSize: '11pt', margin: '0 0 2px' }}>{invoice.billingName}</p>
-          {invoice.billingAddress && <p style={{ color: '#4b5563', fontSize: '8.5pt' }}>{invoice.billingAddress}</p>}
-          {invoice.billingState && <p style={{ color: '#4b5563', fontSize: '8.5pt' }}>{invoice.billingState}</p>}
-          {invoice.billingPhone && <p style={{ color: '#4b5563', fontSize: '8.5pt' }}>📞 {invoice.billingPhone}</p>}
-          {invoice.billingEmail && <p style={{ color: '#4b5563', fontSize: '8.5pt' }}>✉ {invoice.billingEmail}</p>}
-          {invoice.customerGstin && (
-            <p style={{ color: '#4b5563', fontSize: '8.5pt' }}>
-              <strong>GSTIN:</strong> {invoice.customerGstin}
-            </p>
-          )}
+      {/* ══ BILL TO ═════════════════════════════════════════════ */}
+      <div style={{
+        background: '#f8fafc', borderRadius: '6px', padding: '6px 10px',
+        marginBottom: '4mm', flexShrink: 0,
+        borderLeft: '3px solid #6d28d9',
+      }}>
+        <p style={{ fontSize: fs.xs, fontWeight: 700, color: '#6d28d9', letterSpacing: '1px', textTransform: 'uppercase', margin: '0 0 2px' }}>
+          Bill To
+        </p>
+        <p style={{ fontWeight: 700, fontSize: fs.md, margin: '0 0 1px', color: '#1e293b' }}>{invoice.billingName}</p>
+        <div style={{ fontSize: fs.sm, color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
+          {invoice.billingPhone   && <span>📞 {invoice.billingPhone}</span>}
+          {invoice.billingEmail   && <span>✉ {invoice.billingEmail}</span>}
+          {invoice.billingAddress && <span>📍 {invoice.billingAddress}{invoice.billingState ? `, ${invoice.billingState}` : ''}</span>}
+          {invoice.customerGstin  && <span><strong>GSTIN:</strong> {invoice.customerGstin}</span>}
         </div>
       </div>
 
-      {/* ── ITEMS TABLE ── */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '6mm' }}>
+      {/* ══ ITEMS TABLE ═════════════════════════════════════════ */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '4mm', flexShrink: 0 }}>
         <thead>
-          <tr style={{ background: '#7c3aed', color: '#fff' }}>
-            <th style={{ padding: '5px 8px', textAlign: 'left', fontSize: '8pt', fontWeight: 700, borderRadius: '4px 0 0 4px' }}>#</th>
-            <th style={{ padding: '5px 8px', textAlign: 'left', fontSize: '8pt', fontWeight: 700 }}>Description</th>
-            <th style={{ padding: '5px 8px', textAlign: 'center', fontSize: '8pt', fontWeight: 700 }}>HSN/SAC</th>
-            <th style={{ padding: '5px 8px', textAlign: 'center', fontSize: '8pt', fontWeight: 700 }}>Qty</th>
-            <th style={{ padding: '5px 8px', textAlign: 'center', fontSize: '8pt', fontWeight: 700 }}>Unit</th>
-            <th style={{ padding: '5px 8px', textAlign: 'right', fontSize: '8pt', fontWeight: 700 }}>Rate (₹)</th>
-            <th style={{ padding: '5px 8px', textAlign: 'right', fontSize: '8pt', fontWeight: 700, borderRadius: '0 4px 4px 0' }}>Amount (₹)</th>
+          <tr style={{ background: 'linear-gradient(90deg, #5b21b6, #7c3aed)', color: '#fff' }}>
+            {['#', 'Description', 'HSN/SAC', 'Qty', 'Unit', 'Rate (₹)', 'Amount (₹)'].map((h, i) => (
+              <th key={h} style={{
+                padding: '5px 7px',
+                fontSize: fs.xs, fontWeight: 700, letterSpacing: '0.3px',
+                textAlign: i === 0 ? 'center' : i <= 1 ? 'left' : i >= 5 ? 'right' : 'center',
+                borderRadius: i === 0 ? '4px 0 0 4px' : i === 6 ? '0 4px 4px 0' : undefined,
+              }}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {invoice.items.map((item, i) => (
-            <tr
-              key={item.id}
-              style={{ background: i % 2 === 0 ? '#f9fafb' : '#ffffff', borderBottom: '1px solid #e5e7eb' }}
-            >
-              <td style={{ padding: '5px 8px', fontSize: '8.5pt', color: '#6b7280' }}>{i + 1}</td>
-              <td style={{ padding: '5px 8px', fontSize: '8.5pt', fontWeight: 500 }}>{item.description}</td>
-              <td style={{ padding: '5px 8px', fontSize: '8.5pt', textAlign: 'center', color: '#6b7280' }}>{item.hsn ?? '—'}</td>
-              <td style={{ padding: '5px 8px', fontSize: '8.5pt', textAlign: 'center' }}>{item.quantity}</td>
-              <td style={{ padding: '5px 8px', fontSize: '8.5pt', textAlign: 'center', color: '#6b7280' }}>{item.unit ?? '—'}</td>
-              <td style={{ padding: '5px 8px', fontSize: '8.5pt', textAlign: 'right', fontFamily: 'monospace' }}>
-                {item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            <tr key={item.id ?? i} style={{
+              background: i % 2 === 0 ? '#f8fafc' : '#ffffff',
+              borderBottom: '1px solid #f1f5f9',
+            }}>
+              <td style={{ padding: '4px 7px', fontSize: fs.sm, color: '#94a3b8', textAlign: 'center' }}>{i + 1}</td>
+              <td style={{ padding: '4px 7px', fontSize: fs.sm, fontWeight: 500, color: '#1e293b' }}>{item.description}</td>
+              <td style={{ padding: '4px 7px', fontSize: fs.sm, color: '#64748b', textAlign: 'center' }}>{item.hsn ?? '—'}</td>
+              <td style={{ padding: '4px 7px', fontSize: fs.sm, textAlign: 'center' }}>{item.quantity}</td>
+              <td style={{ padding: '4px 7px', fontSize: fs.sm, color: '#64748b', textAlign: 'center' }}>{item.unit ?? '—'}</td>
+              <td style={{ padding: '4px 7px', fontSize: fs.sm, textAlign: 'right', fontFamily: 'monospace' }}>
+                {item.price < 0
+                  ? `−${Math.abs(item.price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                  : item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </td>
-              <td style={{ padding: '5px 8px', fontSize: '8.5pt', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
-                {item.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              <td style={{ padding: '4px 7px', fontSize: fs.sm, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600,
+                color: item.total < 0 ? '#dc2626' : '#1e293b' }}>
+                {item.total < 0
+                  ? `−${Math.abs(item.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                  : item.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* ── TOTALS ── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
-        <div style={{ width: '220px' }}>
-          {/* Subtotal */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '9pt' }}>
-            <span style={{ color: '#6b7280' }}>Subtotal</span>
-            <span style={{ fontFamily: 'monospace' }}>{formatCurrency(invoice.subtotal)}</span>
+      {/* ══ TOTALS + AMOUNT IN WORDS (side by side) ════════════ */}
+      <div style={{ display: 'flex', gap: '8mm', marginBottom: '4mm', flexShrink: 0 }}>
+
+        {/* Left — Amount in words + Bank */}
+        <div style={{ flex: 1 }}>
+          {/* Amount in words */}
+          <div style={{
+            background: '#f5f3ff', border: '1px solid #ddd6fe',
+            borderRadius: '6px', padding: '5px 8px', marginBottom: '3mm', fontSize: fs.sm,
+          }}>
+            <strong style={{ color: '#5b21b6' }}>Amount in Words: </strong>
+            <span style={{ color: '#4c1d95' }}>{numberToWords(invoice.totalAmount)}</span>
           </div>
-          {/* Discount */}
-          {(invoice.discountAmount ?? 0) > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '9pt' }}>
-              <span style={{ color: '#dc2626' }}>Discount</span>
-              <span style={{ color: '#dc2626', fontFamily: 'monospace' }}>− {formatCurrency(invoice.discountAmount ?? 0)}</span>
+
+          {/* Bank Details */}
+          {(comp.bankName || comp.upiId) && (
+            <div style={{
+              background: '#f8fafc', border: '1px solid #e2e8f0',
+              borderRadius: '6px', padding: '5px 8px', fontSize: fs.sm,
+            }}>
+              <p style={{ fontWeight: 700, margin: '0 0 3px', color: '#374151', fontSize: fs.xs, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Bank Details
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px 12px', color: '#475569' }}>
+                {comp.bankName      && <span><strong>Bank:</strong> {comp.bankName}</span>}
+                {comp.accountName   && <span><strong>A/C Name:</strong> {comp.accountName}</span>}
+                {comp.accountNumber && <span><strong>A/C No:</strong> {comp.accountNumber}</span>}
+                {comp.ifscCode      && <span><strong>IFSC:</strong> {comp.ifscCode}</span>}
+                {comp.upiId         && <span><strong>UPI:</strong> {comp.upiId}</span>}
+              </div>
             </div>
           )}
-          {/* GST lines */}
-          {invoice.gstType === 'CGST_SGST' && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '9pt' }}>
-                <span style={{ color: '#6b7280' }}>CGST ({invoice.cgstRate}%)</span>
-                <span style={{ fontFamily: 'monospace' }}>{formatCurrency(invoice.cgstAmount)}</span>
+        </div>
+
+        {/* Right — Totals box */}
+        <div style={{ width: '200px', flexShrink: 0 }}>
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+            {/* Rows */}
+            {[
+              { label: 'Subtotal', value: formatCurrency(invoice.subtotal), color: '#475569' },
+              ...(invoice.discountAmount && invoice.discountAmount > 0
+                ? [{ label: 'Discount', value: `− ${formatCurrency(invoice.discountAmount)}`, color: '#dc2626' }]
+                : []),
+              ...(invoice.gstType === 'CGST_SGST' ? [
+                { label: `CGST (${invoice.cgstRate}%)`, value: formatCurrency(invoice.cgstAmount), color: '#475569' },
+                { label: `SGST (${invoice.sgstRate}%)`, value: formatCurrency(invoice.sgstAmount), color: '#475569' },
+              ] : []),
+              ...(invoice.gstType === 'IGST'
+                ? [{ label: `IGST (${invoice.igstRate}%)`, value: formatCurrency(invoice.igstAmount), color: '#475569' }]
+                : []),
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '3px 8px', fontSize: fs.sm, color, borderBottom: '1px solid #f1f5f9',
+              }}>
+                <span>{label}</span>
+                <span style={{ fontFamily: 'monospace' }}>{value}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '9pt' }}>
-                <span style={{ color: '#6b7280' }}>SGST ({invoice.sgstRate}%)</span>
-                <span style={{ fontFamily: 'monospace' }}>{formatCurrency(invoice.sgstAmount)}</span>
-              </div>
-            </>
-          )}
-          {invoice.gstType === 'IGST' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '9pt' }}>
-              <span style={{ color: '#6b7280' }}>IGST ({invoice.igstRate}%)</span>
-              <span style={{ fontFamily: 'monospace' }}>{formatCurrency(invoice.igstAmount)}</span>
+            ))}
+
+            {/* Total row */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              padding: '5px 8px', fontSize: fs.md, fontWeight: 800,
+              background: 'linear-gradient(90deg, #5b21b6, #7c3aed)', color: '#fff',
+            }}>
+              <span>Total</span>
+              <span style={{ fontFamily: 'monospace' }}>{formatCurrency(invoice.totalAmount)}</span>
             </div>
-          )}
-          {/* Separator */}
-          <div style={{ borderTop: '2px solid #7c3aed', margin: '4px 0' }} />
-          {/* Total */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontWeight: 700, fontSize: '11pt' }}>
-            <span>Total</span>
-            <span style={{ color: '#7c3aed', fontFamily: 'monospace' }}>{formatCurrency(invoice.totalAmount)}</span>
+
+            {/* Paid */}
+            {invoice.paidAmount > 0 && (
+              <div style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '3px 8px', fontSize: fs.sm, color: '#059669', borderBottom: '1px solid #f1f5f9',
+              }}>
+                <span>✓ Paid</span>
+                <span style={{ fontFamily: 'monospace' }}>{formatCurrency(invoice.paidAmount)}</span>
+              </div>
+            )}
+
+            {/* Balance due */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              padding: '4px 8px', fontSize: fs.sm, fontWeight: 700,
+              background: invoice.dueAmount <= 0 ? '#dcfce7' : '#fef2f2',
+              color: invoice.dueAmount <= 0 ? '#15803d' : '#dc2626',
+            }}>
+              <span>Balance Due</span>
+              <span style={{ fontFamily: 'monospace' }}>{formatCurrency(Math.max(0, invoice.dueAmount))}</span>
+            </div>
           </div>
-          {/* Paid */}
-          {invoice.paidAmount > 0 && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '9pt' }}>
-                <span style={{ color: '#059669' }}>Paid</span>
-                <span style={{ color: '#059669', fontFamily: 'monospace' }}>{formatCurrency(invoice.paidAmount)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '9pt', fontWeight: 700 }}>
-                <span style={{ color: '#dc2626' }}>Balance Due</span>
-                <span style={{ color: '#dc2626', fontFamily: 'monospace' }}>{formatCurrency(invoice.dueAmount)}</span>
-              </div>
-            </>
-          )}
         </div>
       </div>
 
-      {/* ── AMOUNT IN WORDS ── */}
-      <div style={{
-        background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px',
-        padding: '6px 10px', marginBottom: '6mm', fontSize: '8.5pt',
-      }}>
-        <strong>Amount in Words: </strong>
-        <span style={{ color: '#5b21b6' }}>{numberToWords(invoice.totalAmount)}</span>
-      </div>
-
-      {/* ── BANK DETAILS ── */}
-      {(comp.bankName || comp.upiId) && (
-        <div style={{
-          background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px',
-          padding: '8px 10px', marginBottom: '6mm', fontSize: '8.5pt',
-        }}>
-          <p style={{ fontWeight: 700, marginBottom: '4px', color: '#374151' }}>Bank Details</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
-            {comp.bankName && <span><strong>Bank:</strong> {comp.bankName}</span>}
-            {comp.accountName && <span><strong>Account Name:</strong> {comp.accountName}</span>}
-            {comp.accountNumber && <span><strong>Account No:</strong> {comp.accountNumber}</span>}
-            {comp.ifscCode && <span><strong>IFSC:</strong> {comp.ifscCode}</span>}
-            {comp.upiId && <span><strong>UPI:</strong> {comp.upiId}</span>}
-          </div>
-        </div>
-      )}
-
-      {/* ── NOTES & TERMS ── */}
+      {/* ══ NOTES & TERMS ═══════════════════════════════════════ */}
       {(invoice.notes || invoice.terms) && (
-        <div style={{ marginBottom: '6mm', fontSize: '8.5pt' }}>
+        <div style={{ display: 'flex', gap: '8mm', marginBottom: '3mm', fontSize: fs.sm, color: '#475569', flexShrink: 0 }}>
           {invoice.notes && (
-            <div style={{ marginBottom: '4px' }}>
-              <strong style={{ color: '#374151' }}>Notes: </strong>
-              <span style={{ color: '#6b7280' }}>{invoice.notes}</span>
+            <div style={{ flex: 1 }}>
+              <strong style={{ color: '#374151' }}>Notes: </strong>{invoice.notes}
             </div>
           )}
           {invoice.terms && (
-            <div>
-              <strong style={{ color: '#374151' }}>Terms & Conditions: </strong>
-              <span style={{ color: '#6b7280' }}>{invoice.terms}</span>
+            <div style={{ flex: 1 }}>
+              <strong style={{ color: '#374151' }}>Terms & Conditions: </strong>{invoice.terms}
             </div>
           )}
         </div>
       )}
 
-      {/* ── FOOTER ── */}
+      {/* ══ SPACER (pushes footer to bottom) ════════════════════ */}
+      <div style={{ flex: 1 }} />
+
+      {/* ══ FOOTER ══════════════════════════════════════════════ */}
       <div style={{
-        borderTop: '1px solid #e5e7eb', paddingTop: '6mm',
+        borderTop: '1px solid #e2e8f0', paddingTop: '4mm', flexShrink: 0,
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
-        fontSize: '8pt', color: '#9ca3af',
       }}>
-        <div>
-          <p>This is a computer-generated invoice.</p>
-          {comp.website && <p>{comp.website}</p>}
+        {/* Left — computer generated note */}
+        <div style={{ fontSize: fs.xs, color: '#94a3b8' }}>
+          <p style={{ margin: 0 }}>This is a computer-generated invoice.</p>
+          {comp.website && <p style={{ margin: '1px 0 0' }}>{comp.website}</p>}
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ borderTop: '1px solid #374151', width: '120px', marginLeft: 'auto', marginBottom: '4px' }} />
-          <p style={{ color: '#374151', fontWeight: 600 }}>Authorised Signatory</p>
-          <p>{comp.companyName}</p>
+
+        {/* Right — Signature */}
+        <div style={{ textAlign: 'center', minWidth: '130px' }}>
+          {comp.signatureUrl ? (
+            <img
+              src={comp.signatureUrl}
+              alt="Signature"
+              style={{ height: '36px', maxWidth: '120px', objectFit: 'contain', marginBottom: '3px' }}
+            />
+          ) : (
+            <div style={{ height: '36px' }} /> // empty space for handwritten sig
+          )}
+          <div style={{ borderTop: '1px solid #374151', paddingTop: '3px' }}>
+            <p style={{ fontSize: fs.xs, fontWeight: 700, color: '#374151', margin: 0 }}>Authorised Signatory</p>
+            <p style={{ fontSize: fs.xs, color: '#64748b', margin: '1px 0 0' }}>{comp.companyName}</p>
+          </div>
         </div>
       </div>
+
+      {/* ══ BOTTOM ACCENT BAR ═══════════════════════════════════ */}
+      <div style={{
+        height: '3px',
+        background: 'linear-gradient(90deg, #6d28d9, #8b5cf6, #c4b5fd)',
+        borderRadius: '2px',
+        marginTop: '4mm',
+        flexShrink: 0,
+      }} />
     </div>
   );
 }

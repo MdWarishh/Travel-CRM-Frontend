@@ -315,8 +315,8 @@ export interface CreateSellerPayload {
   email?: string;
   fromCity: string;
   toCity: string;
-  departureTime: string;
-  arrivalTime: string;
+ departureTime?: string;   
+arrivalTime?: string;  
   travelDate: string;
   seatsAvailable: number;
   pricePerSeat: number;
