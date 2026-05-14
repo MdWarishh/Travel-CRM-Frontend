@@ -3,6 +3,7 @@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -111,6 +112,11 @@ function StatCard({
   );
 }
 
+// ── FIX: null/undefined safe INR formatter ────────────────────────────────────
+function formatINR(value: number | null | undefined): string {
+  return (value ?? 0).toLocaleString('en-IN');
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function BuyerDetailSheet({ buyerId, onClose, onEdit }: Props) {
@@ -128,20 +134,16 @@ export function BuyerDetailSheet({ buyerId, onClose, onEdit }: Props) {
 
   return (
     <Dialog open={!!buyerId} onOpenChange={(v) => !v && onClose()}>
-      {/*
-       * KEY FIX:
-       * - max-w-lg    → centered, appropriate width for a detail view
-       * - flex flex-col → header + scrollable body + footer stacking
-       * - max-h-[90vh] → never taller than viewport
-       * - p-0 gap-0   → manual padding per section
-       * - overflow-hidden → clip rounded corners
-       */}
       <DialogContent className="max-w-lg w-full flex flex-col gap-0 p-0 max-h-[90vh] overflow-hidden">
 
         {/* ── Header ───────────────────────────────────────────────────── */}
         <DialogHeader className="flex-shrink-0 px-5 pt-5 pb-4 border-b bg-gradient-to-br from-violet-500/[0.06] via-transparent to-transparent">
           {isLoading ? (
             <div className="flex items-center gap-3">
+              {/* FIX: Radix requires DialogTitle in DOM at all times — hidden while loading */}
+              <VisuallyHidden>
+                <DialogTitle>Buyer Details</DialogTitle>
+              </VisuallyHidden>
               <Skeleton className="h-11 w-11 rounded-xl flex-shrink-0" />
               <div className="space-y-2 flex-1">
                 <Skeleton className="h-4 w-32" />
@@ -181,9 +183,7 @@ export function BuyerDetailSheet({ buyerId, onClose, onEdit }: Props) {
           )}
         </DialogHeader>
 
-        {/* ── Scrollable Body ───────────────────────────────────────────
-         *  overflow-y-auto + min-h-0 inside flex column = proper scroll
-         */}
+        {/* ── Scrollable Body ───────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {isLoading ? (
             <div className="p-5 space-y-4">
@@ -204,7 +204,7 @@ export function BuyerDetailSheet({ buyerId, onClose, onEdit }: Props) {
                 <StatCard
                   value={
                     <span className="text-sm">
-                      ₹{(buyer.totalCollected ?? 0).toLocaleString('en-IN')}
+                      ₹{formatINR(buyer.totalCollected)}
                     </span>
                   }
                   label="Collected"
@@ -277,7 +277,7 @@ export function BuyerDetailSheet({ buyerId, onClose, onEdit }: Props) {
                 <InfoRow
                   icon={IndianRupee}
                   label="Budget / Seat"
-                  value={`₹${buyer.budgetPerSeat.toLocaleString('en-IN')}`}
+                  value={`₹${formatINR(buyer.budgetPerSeat)}`}
                   iconClass="text-amber-500"
                 />
               </div>
@@ -316,7 +316,7 @@ export function BuyerDetailSheet({ buyerId, onClose, onEdit }: Props) {
                       <InfoRow
                         icon={IndianRupee}
                         label="Agreed Price"
-                        value={`₹${buyer.agreedPricePerSeat.toLocaleString('en-IN')} / seat`}
+                        value={`₹${formatINR(buyer.agreedPricePerSeat)} / seat`}
                         iconClass="text-emerald-500"
                       />
                     )}
@@ -326,7 +326,7 @@ export function BuyerDetailSheet({ buyerId, onClose, onEdit }: Props) {
                         label="Collected"
                         value={
                           <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                            ₹{buyer.totalCollected.toLocaleString('en-IN')}
+                            ₹{formatINR(buyer.totalCollected)}
                           </span>
                         }
                         iconClass="text-emerald-500"

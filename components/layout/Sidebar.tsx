@@ -53,10 +53,7 @@ const navItems: NavItem[] = [
 ];
 
 const settingsChildren: SettingsChild[] = [
-  { href: '/settings/general',     label: 'Web Settings',  icon: Globe,          roles: ['ADMIN'] },
   { href: '/settings/lead-stages', label: 'Lead Settings', icon: Sliders,        roles: ['ADMIN', 'MANAGER'] },
-  { href: '/settings/lead-trash',  label: 'Lead Trash',    icon: Trash2,         roles: ['ADMIN', 'MANAGER'] },
-  { href: '/settings/templates',   label: 'Templates',     icon: LayoutTemplate, roles: ['ADMIN', 'MANAGER'] },
 ];
 
 // ─── NavLink ──────────────────────────────────────────────────────────────────
