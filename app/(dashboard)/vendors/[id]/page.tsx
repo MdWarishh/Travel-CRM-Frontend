@@ -23,8 +23,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { vendorsService }      from '@/services';
-import { VendorStatus, VendorServiceType } from '@/types/vendors';
+import { vendorsService }      from '@/services/vendors.service';
+import { VendorStatus, VendorServiceType, VendorDetail } from '@/types/vendors';
 import { VendorFormModal }     from '../_components/VendorFormModal';
 import { VendorOverviewTab }   from '../_components/tabs/VendorOverviewTab';
 import { VendorBookingsTab }   from '../_components/tabs/VendorBookingsTab';
@@ -106,7 +106,7 @@ export default function VendorDetailPage() {
 
   const { data: vendor, isLoading, isError } = useQuery({
     queryKey: ['vendors', vendorId],
-    queryFn:  () => vendorsService.getById(vendorId),
+    queryFn:  (): Promise<VendorDetail> => vendorsService.getById(vendorId),
     enabled:  !!vendorId && vendorId !== 'undefined',
     staleTime: 30_000,
     retry: 1,
@@ -166,7 +166,7 @@ export default function VendorDetailPage() {
   const bookings    = vendor.bookings    ?? [];
   const payments    = vendor.payments    ?? { totalPaid: 0, pendingAmount: 0, history: [] };
   const performance = vendor.performance ?? { totalBookings: 0, lastUsedDate: null, cancellationRate: 0, reliabilityScore: 0, cancelledCount: 0, activeCount: 0 };
-  const notes       = vendor.notes       ?? [];
+  const notes       = vendor.vendorNotes  ?? [];
 
   return (
     <>
@@ -363,7 +363,7 @@ export default function VendorDetailPage() {
       <VendorFormModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        editItem={vendor}
+        editItem={vendor as any}
       />
     </>
   );

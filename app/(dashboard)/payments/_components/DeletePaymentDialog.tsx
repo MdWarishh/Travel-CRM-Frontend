@@ -12,7 +12,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import { Payment } from '@/types/payment';
+import type { UnifiedPayment as Payment } from '@/types/payment';
 
 interface DeletePaymentDialogProps {
   payment: Payment | null;

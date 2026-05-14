@@ -297,11 +297,11 @@ export function InvoiceTab({ lead }: { lead: PipelineLead }) {
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['lead-invoices', lead.id],
-    queryFn: () => leadsService.getInvoices(lead.id),
+    queryFn: () => leadsService.getLeadInvoices(lead.id),
   });
 
   const createMut = useMutation({
-    mutationFn: (data: any) => leadsService.createInvoice(lead.id, data),
+    mutationFn: (data: any) => leadsService.createLeadInvoice(lead.id, data),
     onSuccess: () => {
       toast.success('Invoice created');
       qc.invalidateQueries({ queryKey: ['lead-invoices', lead.id] });
@@ -313,7 +313,7 @@ export function InvoiceTab({ lead }: { lead: PipelineLead }) {
 
   const updateMut = useMutation({
     mutationFn: ({ invId, data }: { invId: string; data: any }) =>
-      leadsService.updateInvoice(lead.id, invId, data),
+      leadsService.updateLeadInvoice(lead.id, invId, data),
     onSuccess: () => {
       toast.success('Invoice updated');
       qc.invalidateQueries({ queryKey: ['lead-invoices', lead.id] });
@@ -322,7 +322,7 @@ export function InvoiceTab({ lead }: { lead: PipelineLead }) {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (invId: string) => leadsService.deleteInvoice(lead.id, invId),
+    mutationFn: (invId: string) => leadsService.deleteLeadInvoice(lead.id, invId),
     onSuccess: () => {
       toast.success('Invoice deleted');
       qc.invalidateQueries({ queryKey: ['lead-invoices', lead.id] });

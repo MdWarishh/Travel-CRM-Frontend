@@ -1213,16 +1213,20 @@ export default function LeadsPipelinePage() {
       {shareModal && <ShareFormModal onClose={() => setShareModal(false)} />}
 
       <AddLeadModal
-        open={addLeadModal}
-        onClose={() => setAddLeadModal(false)}
-        onSuccess={() => { setAddLeadModal(false); qc.invalidateQueries({ queryKey: ['leads-pipeline'] }); }}
-      />
+  open={addLeadModal}
+  onClose={() => {
+    setAddLeadModal(false);
+    qc.invalidateQueries({ queryKey: ['leads-pipeline'] });
+  }}
+/>
 
-      <ImportLeadModal
-        open={importModal}
-        onClose={() => setImportModal(false)}
-        onSuccess={() => { setImportModal(false); qc.invalidateQueries({ queryKey: ['leads-pipeline'] }); }}
-      />
+<ImportLeadModal
+  open={importModal}
+  onClose={() => {
+    setImportModal(false);
+    qc.invalidateQueries({ queryKey: ['leads-pipeline'] });
+  }}
+/>
 
       {stageModal.open && (
         <StageFormModal

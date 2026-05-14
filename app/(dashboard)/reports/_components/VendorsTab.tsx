@@ -3,7 +3,7 @@
 // app/(dashboard)/reports/_components/VendorsTab.tsx
 
 import { useQuery } from '@tanstack/react-query';
-import { reportsService } from '@/services/index';
+import { reportsService } from '@/services/reports.service';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -14,6 +14,7 @@ import {
   ReportStatCard, ReportCard, ReportEmpty,
   ExportCsvBtn, exportToCSV, CHART_COLORS, ProgressBar,
 } from './ReportUtils';
+import { VendorReport } from '@/types/reports.types';
 
 interface Props { params: Record<string, string> }
 
@@ -26,7 +27,8 @@ export function VendorsTab({ params }: Props) {
   if (isLoading || isFetching) return <VendSkeleton />;
   if (!data) return <ReportEmpty label="No vendor data" />;
 
-  const { summary, byType, byCity, topVendors } = data;
+  const { summary, byType, byCity, topVendors } = data as VendorReport;
+
   const maxRevenue = Math.max(...(topVendors?.map((v) => v.totalRevenue) ?? [1]));
 
   return (

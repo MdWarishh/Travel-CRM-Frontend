@@ -51,6 +51,50 @@ export const unifiedPaymentService = {
     return res.data.data;
   },
 
+  // ─── Preview ──────────────────────────────────
+
+previewReminder: async (bookingId: string) => {
+  const res = await api.get<ApiResponse<{ message: string }>>(
+    `${BASE}/preview/reminder/${bookingId}`
+  );
+  return res.data.data;
+},
+
+previewConfirmation: async (paymentId: string) => {
+  const res = await api.get<ApiResponse<{ message: string }>>(
+    `${BASE}/preview/confirmation/${paymentId}`
+  );
+  return res.data.data;
+},
+
+// ─── Send ─────────────────────────────────────
+
+sendReminder: async (data: {
+  bookingId: string;
+  channel: string;
+  message: string;
+  attachInvoice: boolean;
+  attachReceipt: boolean;
+  paymentId: string;
+}) => {
+  const res = await api.post<ApiResponse<{ success: boolean }>>(
+    `${BASE}/send/reminder`, data
+  );
+  return res.data.data;
+},
+
+sendConfirmation: async (data: {
+  paymentId: string;
+  channel: string;
+  message: string;
+  attachReceipt: boolean;
+}) => {
+  const res = await api.post<ApiResponse<{ success: boolean }>>(
+    `${BASE}/send/confirmation`, data
+  );
+  return res.data.data;
+},
+
   // ─── Delete (ADMIN, manual only) ─────────────
 
   delete: async (id: string) => {

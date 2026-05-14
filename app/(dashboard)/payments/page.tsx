@@ -168,7 +168,7 @@ export default function PaymentsPage() {
       <AddManualPaymentModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onSubmit={(data) => createMutation.mutateAsync(data)}
+        onSubmit={async (data) => { await createMutation.mutateAsync(data); }}
       />
 
       <CustomerPaymentProfile

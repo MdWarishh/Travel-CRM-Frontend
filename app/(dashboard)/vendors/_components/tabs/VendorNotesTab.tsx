@@ -47,8 +47,8 @@ function NoteCard({
 }) {
   // Detect tag prefix like "[warning]" at start
   const tagMatch = note.content.match(/^\[(\w+)\]\s*/);
-  const tag = tagMatch ? tagMatch[1] : null;
-  const content = tag ? note.content.replace(tagMatch[0], '') : note.content;
+  const tag = tagMatch?.[1] ?? null;
+  const content = tagMatch ? note.content.replace(tagMatch[0], '') : note.content;
 
   const tagStyle: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     warning: { bg: 'bg-red-50 border-red-100',    text: 'text-red-700',    icon: <AlertTriangle className="w-3 h-3" /> },

@@ -241,3 +241,46 @@ export interface PaymentsResponse {
   totalPaid: number;
   remainingAmount: number;
 }
+
+// Alias for backward compatibility
+export type CreatePaymentData = CreateUnifiedPaymentData & {
+  paidAmount?: number;
+  dueAmount?: number;
+  transactionId?: string;
+  notes?: string;
+  mode?: PaymentMethod;
+};
+
+// ─────────────────────────────────────────────
+// ALIASES (for component compatibility)
+// ─────────────────────────────────────────────
+
+// Payment alias
+export type Payment = UnifiedPayment & {
+  paidAmount?: number;
+  dueAmount?: number;
+  transactionId?: string;
+  notes?: string | null;   
+  mode: PaymentMethod;
+  status: PaymentStatus;
+  booking?: UnifiedPaymentBooking & { paymentStatus?: string } | null;
+};
+
+// PaymentStatus alias
+export type PaymentStatus = 
+  | 'PAID' 
+  | 'PARTIALLY_PAID' 
+  | 'UNPAID' 
+  | 'REFUNDED';
+
+// PaymentMode alias  
+export type PaymentMode = PaymentMethod;
+
+// PaymentsQueryParams alias
+export type PaymentsQueryParams = UnifiedPaymentsQueryParams & {
+  mode?: PaymentMode;
+  status?: PaymentStatus;
+};
+
+// CommunicationChannel
+export type CommunicationChannel = 'WHATSAPP' | 'EMAIL';

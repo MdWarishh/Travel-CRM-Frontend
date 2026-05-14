@@ -12,6 +12,7 @@ import {
   ReportStatCard, ReportCard, ReportEmpty,
   ExportCsvBtn, exportToCSV, CHART_COLORS, ProgressBar, TabSkeleton,
 } from './ReportUtils';
+import { LeadReport } from '@/types/reports.types';
 
 interface Props { params: Record<string, string> }
 
@@ -24,28 +25,27 @@ export function LeadsTab({ params }: Props) {
   if (isLoading || isFetching) return <TabSkeleton cards={4} rows={2} />;
   if (!data) return <ReportEmpty label="No lead data" />;
 
+  const leadData: LeadReport = data;
+
   // ── Derived values ─────────────────────────────────────────────────────────
-  const hotLeads  = data.byPriority?.find((p) => p.priority === 'HOT')?.count  ?? 0;
-  const warmLeads = data.byPriority?.find((p) => p.priority === 'WARM')?.count ?? 0;
-  const coldLeads = data.byPriority?.find((p) => p.priority === 'COLD')?.count ?? 0;
+const hotLeads  = leadData.byPriority?.find((p) => p.priority === 'HOT')?.count  ?? 0;
+const warmLeads = leadData.byPriority?.find((p) => p.priority === 'WARM')?.count ?? 0;
+const coldLeads = leadData.byPriority?.find((p) => p.priority === 'COLD')?.count ?? 0;
 
-  const maxAgentCount = Math.max(...(data.byAgent?.map((a) => a.count) ?? [1]), 1);
+const maxAgentCount = Math.max(...(leadData.byAgent?.map((a) => a.count) ?? [1]), 1);
 
-  // byStatus from backend has stageId (not name) — display as is
-  const statusChartData = (data.byStatus ?? [])
-    .filter((s) => s.stageId)
-    .map((s) => ({ name: s.stageId ?? 'Unknown', value: s.count }));
+const statusChartData = (leadData.byStatus ?? [])
+  .filter((s) => s.stageId)
+  .map((s) => ({ name: s.stageId ?? 'Unknown', value: s.count }));
 
-  const sourceChartData = (data.bySource ?? []).map((s) => ({
-    name: s.source,
-    value: s.count,
-  }));
+const sourceChartData = (leadData.bySource ?? []).map((s) => ({
+  name: s.source, value: s.count,
+}));
 
-  const priorityChartData = (data.byPriority ?? []).map((p) => ({
-    name: p.priority,
-    value: p.count,
-    fill: p.priority === 'HOT' ? '#ef4444' : p.priority === 'WARM' ? '#f59e0b' : '#3b82f6',
-  }));
+const priorityChartData = (leadData.byPriority ?? []).map((p) => ({
+  name: p.priority, value: p.count,
+  fill: p.priority === 'HOT' ? '#ef4444' : p.priority === 'WARM' ? '#f59e0b' : '#3b82f6',
+}));
 
   return (
     <div className="space-y-4">
@@ -138,7 +138,7 @@ export function LeadsTab({ params }: Props) {
           noPad
           action={
             <ExportCsvBtn onClick={() => exportToCSV('leads-by-agent',
-              data.byAgent.map((a) => ({ Agent: a.agentName, 'Lead Count': a.count }))
+              leadData.byAgent.map((a) => ({ Agent: a.agentName, 'Lead Count': a.count }))
             )} />
           }
         >
@@ -153,7 +153,7 @@ export function LeadsTab({ params }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data.byAgent.map((a, idx) => (
+                {leadData.byAgent.map((a, idx) => (
                   <tr key={a.agentId} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3 text-slate-400 text-xs">{idx + 1}</td>
                     <td className="px-5 py-3 font-medium text-slate-800">{a.agentName}</td>

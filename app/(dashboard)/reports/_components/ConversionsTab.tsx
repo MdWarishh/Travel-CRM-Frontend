@@ -12,6 +12,7 @@ import {
   ReportStatCard, ReportCard, ReportEmpty,
   ExportCsvBtn, exportToCSV, TabSkeleton,
 } from './ReportUtils';
+import { ConversionReport } from '@/types/reports.types';
 
 interface Props { params: Record<string, string> }
 
@@ -22,8 +23,10 @@ export function ConversionsTab({ params }: Props) {
   });
 
   if (isLoading || isFetching) return <TabSkeleton cards={4} rows={2} />;
-  if (!data) return <ReportEmpty label="No conversion data" />;
+if (!data) return <ReportEmpty label="No conversion data" />;
 
+// ✅ Ye add karo
+const convData: ConversionReport = data;
   // ── Derived ────────────────────────────────────────────────────────────────
   const convRate = parseFloat(String(data.conversionRate)) || 0;
   const active   = Math.max(0, data.total - data.converted - data.lost);
@@ -31,7 +34,7 @@ export function ConversionsTab({ params }: Props) {
   const activeRate = Math.max(0, 100 - convRate - lossRate);
 
   // Chart data for agent breakdown
-  const agentChartData = (data.byAgent ?? []).map((a) => ({
+  const agentChartData = (convData.byAgent ?? []).map((a) => ({
     name:      a.agentName.split(' ')[0], // first name only, avoid overflow
     Converted: a.converted,
     Lost:      a.lost,
@@ -121,7 +124,7 @@ export function ConversionsTab({ params }: Props) {
           noPad
           action={
             <ExportCsvBtn onClick={() => exportToCSV('conversions-by-agent',
-              data.byAgent.map((a) => ({
+              convData.byAgent.map((a) => ({
                 Agent:     a.agentName,
                 Converted: a.converted,
                 Lost:      a.lost,
@@ -139,7 +142,7 @@ export function ConversionsTab({ params }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data.byAgent.map((a) => {
+                {convData.byAgent.map((a) => {
                   const agentTotal = a.converted + a.lost;
                   const rate = agentTotal > 0 ? ((a.converted / agentTotal) * 100).toFixed(1) : '0.0';
                   return (

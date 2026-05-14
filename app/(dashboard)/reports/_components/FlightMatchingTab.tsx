@@ -3,7 +3,7 @@
 // app/(dashboard)/reports/_components/FlightMatchingTab.tsx
 
 import { useQuery } from '@tanstack/react-query';
-import { reportsService } from '@/services/index';
+import { reportsService } from '@/services/reports.service';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Plane, CheckCircle2, XCircle, Clock, Target, Percent, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/utils/helpers';

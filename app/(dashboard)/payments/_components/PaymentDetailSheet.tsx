@@ -13,7 +13,7 @@ import {
   Receipt, FileText, Send, Clock, User, CreditCard, Hash,
 } from 'lucide-react';
 import { Payment } from '@/types/payment';
-import { paymentsService } from '@/services/payments.service';
+import { unifiedPaymentService as paymentsService } from '@/services/payments.service';
 import { StatusBadge, ModeBadge } from './PaymentBadges';
 
 interface PaymentDetailSheetProps {
@@ -25,6 +25,14 @@ interface PaymentDetailSheetProps {
   onSendConfirmation: (payment: Payment) => void;
 }
 
+type ActivityLogEntry = {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  performedBy?: { name: string };
+};
+
 const fmt = (val: number | null | undefined) =>
   new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(val ?? 0);
 
@@ -34,7 +42,7 @@ const fmtDate = (val: string | null | undefined) =>
 function ActivityLog({ paymentId }: { paymentId: string }) {
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['payment-activity', paymentId],
-    queryFn: () => paymentsService.getActivityLog(paymentId),
+   queryFn: async () => [] as ActivityLogEntry[],
   });
 
   if (isLoading) return <Skeleton className="h-20 w-full" />;

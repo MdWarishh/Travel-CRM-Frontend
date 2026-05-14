@@ -28,9 +28,10 @@ export function AgentsTab({ params }: Props) {
     queryFn:  () => reportsService.getAgentPerformance(params),
   });
 
-  if (isLoading || isFetching) return <TabSkeleton cards={4} rows={3} />;
-  if (!data?.length) return <ReportEmpty label="No agent data" />;
+if (isLoading || isFetching) return <TabSkeleton cards={4} rows={3} />;
+if (!data?.length) return <ReportEmpty label="No agent data" />;
 
+const agentData: AgentPerformance[] = data;
   // ── Sort ───────────────────────────────────────────────────────────────────
   const sorted = [...data].sort((a, b) => {
     const av = parseFloat(String(a[sortKey])) || 0;
@@ -44,10 +45,11 @@ export function AgentsTab({ params }: Props) {
   };
 
   // ── Team totals ────────────────────────────────────────────────────────────
-  const totalLeads     = data.reduce((s, a) => s + (a.totalLeads  || 0), 0);
-  const totalConverted = data.reduce((s, a) => s + (a.converted   || 0), 0);
-  const teamRate       = totalLeads > 0 ? ((totalConverted / totalLeads) * 100).toFixed(1) : '0.0';
-  const maxConverted   = Math.max(...data.map((a) => a.converted || 0), 1);
+const totalLeads     = agentData.reduce((s: number, a) => s + (a.totalLeads || 0), 0);
+const totalConverted = agentData.reduce((s: number, a) => s + (a.converted  || 0), 0);
+const teamRate       = totalLeads > 0 ? ((totalConverted / totalLeads) * 100).toFixed(1) : '0.0';
+const maxConverted   = Math.max(...agentData.map((a) => a.converted || 0), 1);
+
 
   const SortIcon = ({ k }: { k: SortKey }) =>
     sortKey === k
@@ -130,7 +132,7 @@ export function AgentsTab({ params }: Props) {
         noPad
         action={
           <ExportCsvBtn onClick={() => exportToCSV('agent-performance',
-            data.map((a) => ({
+          agentData.map((a) => ({
               Name:            a.name,
               Role:            a.role,
               Email:           a.email,

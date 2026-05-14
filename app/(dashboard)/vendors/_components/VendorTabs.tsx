@@ -5,7 +5,7 @@
 
 import { Building2, Phone, Mail, MapPin, Percent, CreditCard, FileText } from 'lucide-react';
 import { VendorDetail } from '@/types/vendors';
-import { formatDate } from '../vendor.constants';
+import { formatDate, formatCurrency } from './vendor.constants';
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value) return null;
@@ -276,130 +276,6 @@ export function VendorPerformanceTab({
           <div key={label} className="bg-slate-50 rounded-xl p-4">
             <p className="text-[11px] font-medium text-slate-400 mb-1">{label}</p>
             <p className={`text-lg font-bold ${color}`}>{value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
-// ─────────────────────────────────────────────────────────────
-// VendorNotesTab
-// ─────────────────────────────────────────────────────────────
-
-import { useState as useStateFn } from 'react';
-import { useMutation as useMutationFn, useQueryClient as useQCFn } from '@tanstack/react-query';
-import { Plus, Trash2, Pencil as PencilIcon, Check, X } from 'lucide-react';
-import { Button as Btn } from '@/components/ui/button';
-import { Textarea as TA } from '@/components/ui/textarea';
-import { vendorNotesService } from '@/services';
-import { VendorNote } from '@/types/vendors';
-
-export function VendorNotesTab({ vendorId, notes }: { vendorId: string; notes: VendorNote[] }) {
-  const qc = useQCFn();
-  const [newNote, setNewNote] = useStateFn('');
-  const [editId, setEditId]   = useStateFn<string | null>(null);
-  const [editVal, setEditVal] = useStateFn('');
-
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['vendors', vendorId] });
-
-  const addMutation = useMutationFn({
-    mutationFn: () => vendorNotesService.add(vendorId, { content: newNote }),
-    onSuccess: () => { invalidate(); setNewNote(''); toast.success('Note added'); },
-  });
-
-  const updateMutation = useMutationFn({
-    mutationFn: ({ noteId, content }: { noteId: string; content: string }) =>
-      vendorNotesService.update(vendorId, noteId, { content }),
-    onSuccess: () => { invalidate(); setEditId(null); toast.success('Note updated'); },
-  });
-
-  const deleteMutation = useMutationFn({
-    mutationFn: (noteId: string) => vendorNotesService.delete(vendorId, noteId),
-    onSuccess: () => { invalidate(); toast.success('Note deleted'); },
-  });
-
-  return (
-    <div className="space-y-4">
-      {/* Add note */}
-      <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 space-y-2">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Add Note</p>
-        <TA
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-          rows={3}
-          placeholder="Service quality remarks, pricing notes, warnings..."
-          className="bg-white text-sm"
-        />
-        <div className="flex justify-end">
-          <Btn
-            size="sm"
-            onClick={() => addMutation.mutate()}
-            disabled={!newNote.trim() || addMutation.isPending}
-            className="gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add Note
-          </Btn>
-        </div>
-      </div>
-
-      {/* Notes list */}
-      <div className="space-y-3">
-        {!notes.length && (
-          <p className="text-sm text-slate-400 text-center py-8">No notes yet. Add your first note above.</p>
-        )}
-        {notes.map((note) => (
-          <div key={note.id} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-            {editId === note.id ? (
-              <div className="space-y-2">
-                <TA
-                  value={editVal}
-                  onChange={(e) => setEditVal(e.target.value)}
-                  rows={3}
-                  className="bg-white text-sm"
-                  autoFocus
-                />
-                <div className="flex justify-end gap-2">
-                  <Btn
-                    size="sm" variant="outline"
-                    onClick={() => setEditId(null)}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </Btn>
-                  <Btn
-                    size="sm"
-                    onClick={() => updateMutation.mutate({ noteId: note.id, content: editVal })}
-                    disabled={updateMutation.isPending}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                  </Btn>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{note.content}</p>
-                  <p className="text-[11px] text-slate-400 mt-1.5">
-                    {note.createdBy?.name ?? 'Unknown'} · {formatDate(note.createdAt)}
-                  </p>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <button
-                    onClick={() => { setEditId(note.id); setEditVal(note.content); }}
-                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <PencilIcon className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => deleteMutation.mutate(note.id)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>

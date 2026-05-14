@@ -12,9 +12,20 @@ import {
   AgentPerformance,
   ReportDateParams,
   ReportApiResponse,
+  CustomerReport,
+  DashboardReport,
+  FlightMatchingReport,
+  ProfitLossReport,
+  VendorReport,
 } from '@/types/reports.types';
 
 export const reportsService = {
+
+  getDashboard: async (params?: ReportDateParams): Promise<DashboardReport> => {
+  const res = await api.get<ReportApiResponse<DashboardReport>>('/reports/dashboard', { params });
+  return res.data.data;
+},
+
   // GET /reports/leads?from=&to=&source=&assignedToId=
   getLeadReport: async (params?: LeadQueryParams): Promise<LeadReport> => {
     const res = await api.get<ReportApiResponse<LeadReport>>('/reports/leads', { params });
@@ -39,9 +50,28 @@ export const reportsService = {
     return res.data.data;
   },
 
+  getFlightMatchingReport: async (params?: ReportDateParams): Promise<FlightMatchingReport> => {
+  const res = await api.get<ReportApiResponse<FlightMatchingReport>>('/reports/flight-matching', { params });
+  return res.data.data;
+},
+
   // GET /reports/agent-performance?from=&to=
   getAgentPerformance: async (params?: ReportDateParams): Promise<AgentPerformance[]> => {
     const res = await api.get<ReportApiResponse<AgentPerformance[]>>('/reports/agent-performance', { params });
     return res.data.data;
   },
+
+  getCustomerReport: async (params?: ReportDateParams): Promise<CustomerReport> => {
+  const res = await api.get<ReportApiResponse<CustomerReport>>('/reports/customers', { params });
+  return res.data.data;
+},
+
+getProfitLossReport: async (params?: ReportDateParams): Promise<ProfitLossReport> => {
+  const res = await api.get<ReportApiResponse<ProfitLossReport>>('/reports/profit-loss', { params });
+  return res.data.data;
+},
+getVendorReport: async (params?: ReportDateParams): Promise<VendorReport> => {
+  const res = await api.get<ReportApiResponse<VendorReport>>('/reports/vendors', { params });
+  return res.data.data;
+},
 };

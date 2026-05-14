@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { vendorsService } from '@/services';
+import { vendorsService } from '@/services/vendors.service';
 import { Vendor, VendorStatus, VendorServiceType } from '@/types/vendors';
 import {
   VENDOR_TYPE_COLORS,

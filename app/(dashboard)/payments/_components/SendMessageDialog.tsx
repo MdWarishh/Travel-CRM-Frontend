@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Payment, CommunicationChannel } from '@/types/payment';
-import { paymentsService } from '@/services/payments.service';
+import { unifiedPaymentService as paymentsService } from '@/services/payments.service';
 import { toast } from 'sonner';
 
 type Mode = 'reminder' | 'confirmation';

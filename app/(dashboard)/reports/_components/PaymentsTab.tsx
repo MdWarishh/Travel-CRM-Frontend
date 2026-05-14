@@ -14,6 +14,7 @@ import {
   ReportStatCard, ReportCard, ReportEmpty,
   StatusBadge, ExportCsvBtn, exportToCSV, CHART_COLORS, TabSkeleton,
 } from './ReportUtils';
+import { PaymentReport } from '@/types/reports.types';
 
 interface Props { params: Record<string, string> }
 
@@ -33,14 +34,15 @@ export function PaymentsTab({ params }: Props) {
   if (isLoading || isFetching) return <TabSkeleton cards={4} rows={2} />;
   if (!data) return <ReportEmpty label="No payment data" />;
 
+  const payData: PaymentReport = data;
+
   // ── Derived ────────────────────────────────────────────────────────────────
-  const collectionRate = data.totalAmount > 0
-    ? ((data.totalCollected / data.totalAmount) * 100).toFixed(1)
-    : '0.0';
+const collectionRate = payData.totalAmount > 0
+  ? ((payData.totalCollected / payData.totalAmount) * 100).toFixed(1)
+  : '0.0';
 
-  const modeChartData   = (data.byMode   ?? []).map((m) => ({ name: m.mode,   value: m.collected ?? 0 }));
-  const statusChartData = (data.byStatus ?? []).map((s) => ({ name: s.status, value: s.amount   ?? 0 }));
-
+const modeChartData   = (payData.byMode   ?? []).map((m) => ({ name: m.mode,   value: m.collected ?? 0 }));
+const statusChartData = (payData.byStatus ?? []).map((s) => ({ name: s.status, value: s.amount   ?? 0 }));
   return (
     <div className="space-y-4">
       {/* Mode filter pills */}
@@ -144,7 +146,7 @@ export function PaymentsTab({ params }: Props) {
           noPad
           action={
             <ExportCsvBtn onClick={() => exportToCSV('payments-by-status',
-              data.byStatus.map((s) => ({ Status: s.status, Count: s.count, Amount: s.amount }))
+              payData.byStatus.map((s) => ({ Status: s.status, Count: s.count, Amount: s.amount }))
             )} />
           }
         >
@@ -158,7 +160,7 @@ export function PaymentsTab({ params }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data.byStatus.map((s) => (
+                {payData.byStatus.map((s) => (
                   <tr key={s.status} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3"><StatusBadge label={s.status} /></td>
                     <td className="px-5 py-3 font-medium text-slate-700">{s.count}</td>

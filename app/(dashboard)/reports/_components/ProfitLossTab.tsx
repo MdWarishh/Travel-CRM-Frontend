@@ -3,7 +3,7 @@
 // app/(dashboard)/reports/_components/ProfitLossTab.tsx
 
 import { useQuery } from '@tanstack/react-query';
-import { reportsService } from '@/services/index';
+import { reportsService } from '@/services/reports.service';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, ReferenceLine,
@@ -11,6 +11,7 @@ import {
 import { DollarSign, TrendingDown, TrendingUp, Percent } from 'lucide-react';
 import { formatCurrency } from '@/utils/helpers';
 import { ReportStatCard, ReportCard, ReportEmpty, ExportCsvBtn, exportToCSV } from './ReportUtils';
+import { ProfitLossReport } from '@/types/reports.types';
 
 interface Props { params: Record<string, string> }
 
@@ -22,8 +23,8 @@ export function ProfitLossTab({ params }: Props) {
 
   if (isLoading || isFetching) return <PLSkeleton />;
   if (!data) return <ReportEmpty label="No P&L data" />;
+  const { summary, monthlyPL } = data as ProfitLossReport;
 
-  const { summary, monthlyPL } = data;
 
   return (
     <div className="space-y-4">

@@ -4,7 +4,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Building2, Star, ShieldX, CheckCircle2, Loader2 } from 'lucide-react';
-import { vendorsService } from '@/services';
+import { vendorsService } from '@/services/vendors.service';
+import { VendorDashboardStats } from '@/types/vendors';
 
 interface StatCardProps {
   icon: React.ElementType;
@@ -38,7 +39,7 @@ function StatCard({ icon: Icon, label, value, iconColor, iconBg, loading }: Stat
 export function VendorStatsBar() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['vendors', 'stats'],
-    queryFn: vendorsService.getStats,
+    queryFn: (): Promise<VendorDashboardStats> => vendorsService.getStats(),
     staleTime: 60_000,
   });
 

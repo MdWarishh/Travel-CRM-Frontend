@@ -127,7 +127,7 @@ export interface VendorDetail extends Vendor {
   bookings: VendorBooking[];
   payments: VendorPayments;
   performance: VendorPerformance;
-  notes: VendorNote[];
+  vendorNotes: VendorNote[];  // renamed from notes to avoid conflict with Vendor.notes (string)
 }
 
 // ── Dashboard Stats ───────────────────────────────────────────────────────────

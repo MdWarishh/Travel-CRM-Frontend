@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { leadsService, leadStagesService } from '@/services/leads.service';
-import type { LeadStage } from '@/types/leads.types';
+import type { LeadStage, CreateLeadData } from '@/types/leads.types';
 import {
   Dialog,
   DialogContent,
@@ -160,6 +160,7 @@ function FieldGroup({
 interface AddLeadModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   defaultStageId?: string;
 }
 
@@ -180,7 +181,7 @@ export function AddLeadModal({ open, onClose, defaultStageId }: AddLeadModalProp
 
   // ── Create mutation ───────────────────────────────────────────────────────
   const createMut = useMutation({
-    mutationFn: (data: Record<string, unknown>) => leadsService.create(data),
+    mutationFn: (data: CreateLeadData) => leadsService.create(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['leads-pipeline'] });
       qc.invalidateQueries({ queryKey: ['leads'] });
@@ -221,11 +222,11 @@ export function AddLeadModal({ open, onClose, defaultStageId }: AddLeadModalProp
   const handleSubmit = () => {
     if (!validate()) return;
 
-    const payload: Record<string, unknown> = {
+    const payload: CreateLeadData = {
       name: form.name.trim(),
       phone: form.phone.trim(),
-      source: form.source,
-      priority: form.priority,
+      source: form.source as CreateLeadData['source'],
+      priority: form.priority as CreateLeadData['priority'],
     };
     if (form.email.trim()) payload.email = form.email.trim();
     if (form.stageId) payload.stageId = form.stageId;

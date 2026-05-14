@@ -3,7 +3,7 @@
 // app/(dashboard)/reports/_components/DashboardTab.tsx
 
 import { useQuery } from '@tanstack/react-query';
-import { reportsService } from '@/services/index';
+import { reportsService } from '@/services/reports.service';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,

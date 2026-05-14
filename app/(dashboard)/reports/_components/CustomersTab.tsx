@@ -3,13 +3,14 @@
 // app/(dashboard)/reports/_components/CustomersTab.tsx
 
 import { useQuery } from '@tanstack/react-query';
-import { reportsService } from '@/services/index';
+import { reportsService } from '@/services/reports.service';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area,
 } from 'recharts';
 import { Users, UserPlus, RefreshCw, Heart } from 'lucide-react';
 import { ReportStatCard, ReportCard, ReportEmpty } from './ReportUtils';
+import { CustomerReport } from '@/types/reports.types';
 
 interface Props { params: Record<string, string> }
 
@@ -21,8 +22,7 @@ export function CustomersTab({ params }: Props) {
 
   if (isLoading || isFetching) return <CustSkeleton />;
   if (!data) return <ReportEmpty label="No customer data" />;
-
-  const { summary, byCity, monthlyTrend } = data;
+const { summary, byCity, monthlyTrend } = data as CustomerReport;
 
   return (
     <div className="space-y-4">

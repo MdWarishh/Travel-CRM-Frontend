@@ -14,6 +14,7 @@ import {
   ReportStatCard, ReportCard, ReportEmpty,
   StatusBadge, ExportCsvBtn, exportToCSV, CHART_COLORS, TabSkeleton,
 } from './ReportUtils';
+import { BookingReport } from '@/types/reports.types';
 
 interface Props { params: Record<string, string> }
 
@@ -30,14 +31,15 @@ export function BookingsTab({ params }: Props) {
     }),
   });
 
-  if (isLoading || isFetching) return <TabSkeleton cards={3} rows={2} />;
-  if (!data) return <ReportEmpty label="No booking data" />;
+if (isLoading || isFetching) return <TabSkeleton cards={3} rows={2} />;
+if (!data) return <ReportEmpty label="No booking data" />;
 
+// ✅ Ye line add karo
+const bookingData: BookingReport = data;
   // ── Derived ────────────────────────────────────────────────────────────────
-  const completed = data.byStatus?.find((b) => b.status === 'COMPLETED')?.count ?? 0;
-  const cancelled = data.byStatus?.find((b) => b.status === 'CANCELLED')?.count ?? 0;
-
-  const statusChartData = (data.byStatus ?? []).map((b) => ({
+const completed = bookingData.byStatus?.find((b) => b.status === 'COMPLETED')?.count ?? 0;
+const cancelled = bookingData.byStatus?.find((b) => b.status === 'CANCELLED')?.count ?? 0;
+const statusChartData = (bookingData.byStatus ?? []).map((b) => ({
     name:  b.status,
     value: b.count,
   }));
@@ -130,7 +132,7 @@ export function BookingsTab({ params }: Props) {
           noPad
           action={
             <ExportCsvBtn onClick={() => exportToCSV('bookings',
-              data.bookings.map((b) => ({
+             bookingData.bookings.map((b) => ({
                 Customer:    b.customer?.name   ?? '',
                 Itinerary:   b.itinerary?.title ?? '',
                 Destination: b.itinerary?.destination ?? '',
@@ -150,7 +152,7 @@ export function BookingsTab({ params }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data.bookings.slice(0, 25).map((b) => (
+                {bookingData.bookings.slice(0, 25).map((b) => (
                   <tr key={b.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3 font-medium text-slate-800">{b.customer?.name  ?? '—'}</td>
                     <td className="px-5 py-3 text-slate-600 max-w-[180px] truncate">{b.itinerary?.title ?? '—'}</td>
